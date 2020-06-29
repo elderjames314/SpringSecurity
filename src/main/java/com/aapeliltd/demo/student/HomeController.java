@@ -10,7 +10,7 @@ public class HomeController {
 	@GetMapping("/error")
 	public String error() {
 		
-		return "<h2>Something went wrogn, please check back</h2>";
+		return "Something went wrogn, please check back...";
 	}
 
 }
