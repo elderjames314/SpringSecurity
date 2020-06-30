@@ -16,12 +16,16 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 
 import com.aapeliltd.demo.auth.ApplicationUserService;
+import com.aapeliltd.demo.jwt.JwtConfig;
+import com.aapeliltd.demo.jwt.JwtTokenVerifier;
+import com.aapeliltd.demo.jwt.JwtUsernameAndPasswordFilter;
 
 
 @Configuration
@@ -30,65 +34,98 @@ import com.aapeliltd.demo.auth.ApplicationUserService;
 public class ApplicationSecurityConfig extends WebSecurityConfigurerAdapter {
 
 	public final PasswordEncoder passwordEncoder;
+	private final ApplicationUserService applicationUserService;
+	
+	private final JwtConfig JwtConfig;
 	
 	@Autowired
-	private ApplicationUserService applicationUserService;
-	
-	@Autowired
-	public ApplicationSecurityConfig(PasswordEncoder passwordEncoder) {
+	public ApplicationSecurityConfig(
+			PasswordEncoder passwordEncoder,
+			JwtConfig jwtConfig,
+			ApplicationUserService applicationUserService) {
 
 		this.passwordEncoder = passwordEncoder;
+		this.JwtConfig = jwtConfig;
+		this.applicationUserService = applicationUserService;
 	}
+	
+	
 
+	
+	
+	
+	
+//	@Override
+//	protected void configure(HttpSecurity http) throws Exception {
+//		
+//		http
+//			.csrf().disable()
+//			.authorizeRequests()
+//			.antMatchers("/", "/index", "/error", "/css/*", "/jss/*")
+//			.permitAll()
+//			.antMatchers("/api/**").hasAnyRole(ApplicationUserRole.STUDENT.name())
+//				/*
+//				 * .antMatchers(HttpMethod.DELETE,
+//				 * "/management/api/**").hasAuthority(ApplicationUserPermission.COURSE_WRITE.
+//				 * getPermission()) .antMatchers(HttpMethod.POST,
+//				 * "/management/api/**").hasAuthority(ApplicationUserPermission.COURSE_WRITE.
+//				 * getPermission()) .antMatchers(HttpMethod.PUT,
+//				 * "/management/api/**").hasAuthority(ApplicationUserPermission.COURSE_READ.
+//				 * permission) .antMatchers(HttpMethod.GET,
+//				 * "/management/api/**").hasAnyRole(ApplicationUserRole.ADMIN.name(),
+//				 * ApplicationUserRole.TRANEE.name())
+//				 */
+//			.anyRequest()
+//			.authenticated()
+//			.and()
+////			.httpBasic(); // basic authentication
+//			.formLogin()
+//				.loginPage("/login").permitAll().defaultSuccessUrl("/courses", true)
+//				.passwordParameter("password")
+//				.usernameParameter("username")
+//			
+//			.and()
+//			.rememberMe() //this is default two weeks.
+//				.rememberMeParameter("remember-me")
+//			.tokenValiditySeconds((int)TimeUnit.DAYS.toSeconds(21)).key("verysecured") //increase the validity 
+//			// of the cookies for 21 days.
+//			// add key like MD5 to make it secured.
+//			.and()
+//			.logout()
+//				.logoutUrl("/logout")
+//				.clearAuthentication(true)
+//				.invalidateHttpSession(true)
+//				.deleteCookies("JSESSIONID", "remember-me")
+//				.logoutSuccessUrl("/login");
+//				
+//		
+//			
+//	}
+	
+	
+	
 	@Override
 	protected void configure(HttpSecurity http) throws Exception {
 		
 		http
 			.csrf().disable()
+			.sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+			.and()
+			.addFilter(new JwtUsernameAndPasswordFilter(authenticationManager()))
+			.addFilterAfter(new JwtTokenVerifier(), JwtUsernameAndPasswordFilter.class)
 			.authorizeRequests()
-			.antMatchers("/", "/index", "/error", "/css/*", "/jss/*")
-			.permitAll()
-			.antMatchers("/api/**").hasAnyRole(ApplicationUserRole.STUDENT.name())
-				/*
-				 * .antMatchers(HttpMethod.DELETE,
-				 * "/management/api/**").hasAuthority(ApplicationUserPermission.COURSE_WRITE.
-				 * getPermission()) .antMatchers(HttpMethod.POST,
-				 * "/management/api/**").hasAuthority(ApplicationUserPermission.COURSE_WRITE.
-				 * getPermission()) .antMatchers(HttpMethod.PUT,
-				 * "/management/api/**").hasAuthority(ApplicationUserPermission.COURSE_READ.
-				 * permission) .antMatchers(HttpMethod.GET,
-				 * "/management/api/**").hasAnyRole(ApplicationUserRole.ADMIN.name(),
-				 * ApplicationUserRole.TRANEE.name())
-				 */
+			.antMatchers("/", "/index", "/css/*", "/js/*").permitAll()
+			.antMatchers("/api/**").hasRole(ApplicationUserRole.STUDENT.name())
 			.anyRequest()
-			.authenticated()
-			.and()
-//			.httpBasic(); // basic authentication
-			.formLogin()
-				.loginPage("/login").permitAll().defaultSuccessUrl("/courses", true)
-				.passwordParameter("password")
-				.usernameParameter("username")
+			.authenticated();
 			
-			.and()
-			.rememberMe() //this is default two weeks.
-				.rememberMeParameter("remember-me")
-			.tokenValiditySeconds((int)TimeUnit.DAYS.toSeconds(21)).key("verysecured") //increase the validity 
-			// of the cookies for 21 days.
-			// add key like MD5 to make it secured.
-			.and()
-			.logout()
-				.logoutUrl("/logout")
-				.clearAuthentication(true)
-				.invalidateHttpSession(true)
-				.deleteCookies("JSESSIONID", "remember-me")
-				.logoutSuccessUrl("/login");
-				
-		
 			
 	}
-	
-	
-	
+
+
+
+
+
 	@Override
 	protected void configure(AuthenticationManagerBuilder auth) throws Exception {
 		auth.authenticationProvider(daoAuthenticataionProvider());
