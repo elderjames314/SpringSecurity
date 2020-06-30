@@ -3,6 +3,9 @@ package com.aapeliltd.demo.security;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.User.UserBuilder;
 import org.springframework.security.core.userdetails.UserDetails;
+
+import java.util.concurrent.TimeUnit;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -53,7 +56,28 @@ public class ApplicationSecurityConfig extends WebSecurityConfigurerAdapter {
 			.anyRequest()
 			.authenticated()
 			.and()
-			.httpBasic();
+//			.httpBasic(); // basic authentication
+			.formLogin()
+				.loginPage("/login").permitAll().defaultSuccessUrl("/courses", true)
+				.passwordParameter("password")
+				.usernameParameter("username")
+			
+			.and()
+			.rememberMe() //this is default two weeks.
+				.rememberMeParameter("remember-me")
+			.tokenValiditySeconds((int)TimeUnit.DAYS.toSeconds(21)).key("verysecured") //increase the validity 
+			// of the cookies for 21 days.
+			// add key like MD5 to make it secured.
+			.and()
+			.logout()
+				.logoutUrl("/logout")
+				.clearAuthentication(true)
+				.invalidateHttpSession(true)
+				.deleteCookies("JSESSIONID", "remember-me")
+				.logoutSuccessUrl("/login");
+				
+		
+			
 	}
 
 	//to create user, you will need override this.
