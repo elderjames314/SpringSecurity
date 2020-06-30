@@ -10,6 +10,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -19,6 +21,8 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 
+import com.aapeliltd.demo.auth.ApplicationUserService;
+
 
 @Configuration
 @EnableWebSecurity
@@ -26,6 +30,9 @@ import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 public class ApplicationSecurityConfig extends WebSecurityConfigurerAdapter {
 
 	public final PasswordEncoder passwordEncoder;
+	
+	@Autowired
+	private ApplicationUserService applicationUserService;
 	
 	@Autowired
 	public ApplicationSecurityConfig(PasswordEncoder passwordEncoder) {
@@ -79,48 +86,65 @@ public class ApplicationSecurityConfig extends WebSecurityConfigurerAdapter {
 		
 			
 	}
+	
+	
+	
+	@Override
+	protected void configure(AuthenticationManagerBuilder auth) throws Exception {
+		auth.authenticationProvider(daoAuthenticataionProvider());
+	}
+
+	@Bean
+	public DaoAuthenticationProvider daoAuthenticataionProvider() {
+		
+		DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
+		provider.setPasswordEncoder(passwordEncoder);
+		provider.setUserDetailsService(applicationUserService);
+		return provider;
+		
+	}
 
 	//to create user, you will need override this.
 	//ideally you should retrieve the user from the database
 	//but for the example sake, lets build the user and use it.
-	@Override
-	@Bean
-	protected UserDetailsService userDetailsService() {
-		
-		//creation of user 1
-		UserDetails jamesUser = User.builder()
-				.username("james")
-				.password(passwordEncoder.encode("123456"))
-				.roles(ApplicationUserRole.STUDENT.name()) // ROLE_STUDENT
-				.authorities(ApplicationUserRole.STUDENT.getGrandtedAuthorities())
-				.build();
-		
-		//creation of user 2
-		UserDetails max = User.builder()
-				.username("max")
-				.password(passwordEncoder.encode("123456"))
-				.roles(ApplicationUserRole.ADMIN.name())
-				.authorities(ApplicationUserRole.ADMIN.getGrandtedAuthorities())
-				.build();
-		
-		//creation of user 3.
-		UserDetails tom = User.builder()
-				.username("tom")
-				.password(passwordEncoder.encode("123456"))
-				.roles(ApplicationUserRole.TRANEE.name())
-				.authorities(ApplicationUserRole.TRANEE.getGrandtedAuthorities())
-				.build();
-				
-		
-		return new InMemoryUserDetailsManager(
-				jamesUser,
-				max,
-				tom
-		);
-	  
-	
-		
-	}
+//	@Override
+//	@Bean
+//	protected UserDetailsService userDetailsService() {
+//		
+//		//creation of user 1
+//		UserDetails jamesUser = User.builder()
+//				.username("james")
+//				.password(passwordEncoder.encode("123456"))
+//				.roles(ApplicationUserRole.STUDENT.name()) // ROLE_STUDENT
+//				.authorities(ApplicationUserRole.STUDENT.getGrandtedAuthorities())
+//				.build();
+//		
+//		//creation of user 2
+//		UserDetails max = User.builder()
+//				.username("max")
+//				.password(passwordEncoder.encode("123456"))
+//				.roles(ApplicationUserRole.ADMIN.name())
+//				.authorities(ApplicationUserRole.ADMIN.getGrandtedAuthorities())
+//				.build();
+//		
+//		//creation of user 3.
+//		UserDetails tom = User.builder()
+//				.username("tom")
+//				.password(passwordEncoder.encode("123456"))
+//				.roles(ApplicationUserRole.TRANEE.name())
+//				.authorities(ApplicationUserRole.TRANEE.getGrandtedAuthorities())
+//				.build();
+//				
+//		
+//		return new InMemoryUserDetailsManager(
+//				jamesUser,
+//				max,
+//				tom
+//		);
+//	  
+//	
+//		
+//	}
 	
 	
 
